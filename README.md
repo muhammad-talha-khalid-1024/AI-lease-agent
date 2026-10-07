@@ -1,4 +1,4 @@
-# Marina Crest — AI Lease & Issue Agent
+# AI Lease & Issue Agent
 
 A small full-stack service where two AI agents sit on top of a single **unit** record. The lease agent reads a lease document into a structured, human-reviewable record and validates it against the owner's ruleset. The vision agent reads property photos into a condition report and a draft work order. Both agents write against a shared `unit_id`, so an owner can open one screen and see a unit's lease and its open issues in one place.
 
