@@ -1,0 +1,106 @@
+generator client {
+  provider = "prisma-client-js"
+  output   = "../generated/prisma"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+model Unit {
+  unitId     String  @id
+  buildingId String
+  propertyId String
+  label      String
+  type       String
+  areaSqm    Int
+  parkingBay String?
+  status     String
+  issues     Issue[]
+  leases     Lease[]
+}
+
+model Lease {
+  id          String       @id @default(cuid())
+  unitId      String?
+  fileName    String
+  rawText     String       @db.LongText
+  status      String       @default("pending_review")
+  createdAt   DateTime     @default(now())
+  unit        Unit?        @relation(fields: [unitId], references: [unitId])
+  fields      LeaseField[]
+  flags       LeaseFlag[]
+  ruleResults RuleResult[]
+
+  @@index([unitId], map: "Lease_unitId_fkey")
+}
+
+model LeaseField {
+  id             String    @id @default(cuid())
+  leaseId        String
+  key            String
+  value          String    @db.Text
+  confidence     Float
+  sourceSnippet  String    @db.Text
+  sourceLocation String?
+  status         String    @default("pending")
+  reviewedAt     DateTime?
+  reviewedBy     String?
+  lease          Lease     @relation(fields: [leaseId], references: [id], onDelete: Cascade)
+
+  @@index([leaseId, key])
+}
+
+model LeaseFlag {
+  id       String  @id @default(cuid())
+  leaseId  String
+  kind     String
+  severity String
+  message  String  @db.Text
+  evidence String? @db.Text
+  status   String  @default("pending")
+  lease    Lease   @relation(fields: [leaseId], references: [id], onDelete: Cascade)
+
+  @@index([leaseId], map: "LeaseFlag_leaseId_fkey")
+}
+
+model RuleResult {
+  id        String  @id @default(cuid())
+  leaseId   String
+  ruleId    String
+  status    String
+  reason    String  @db.Text
+  severity  String
+  sourceRef String?
+  status2   String  @default("pending")
+  lease     Lease   @relation(fields: [leaseId], references: [id], onDelete: Cascade)
+
+  @@unique([leaseId, ruleId])
+}
+
+model Issue {
+  id             String     @id @default(cuid())
+  unitId         String
+  photoPaths     String     @db.LongText
+  condition      String     @db.Text
+  conditionScore String
+  contents       String     @db.LongText
+  damages        String     @db.LongText
+  createdAt      DateTime   @default(now())
+  unit           Unit       @relation(fields: [unitId], references: [unitId])
+  workOrder      WorkOrder?
+
+  @@index([unitId], map: "Issue_unitId_fkey")
+}
+
+model WorkOrder {
+  id          String    @id @default(cuid())
+  issueId     String    @unique
+  unitId      String
+  title       String
+  description String    @db.Text
+  status      String    @default("pending")
+  reviewedAt  DateTime?
+  issue       Issue     @relation(fields: [issueId], references: [id], onDelete: Cascade)
+}
